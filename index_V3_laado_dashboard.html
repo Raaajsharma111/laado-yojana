@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>लाडो प्रोत्साहन योजना — Analytics Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --navy: #0b1e3d;
+  --navy2: #112444;
+  --navy3: #162d55;
+  --blue: #1a4a8a;
+  --red: #c0282f;
+  --saffron: #f4860a;
+  --gold: #d4a017;
+  --green: #1e8a4a;
+  --pink: #e8627a;
+  --white: #ffffff;
+  --text: #e2e8f4;
+  --muted: #7a8ba8;
+  --border: rgba(255,255,255,0.08);
+  --card: rgba(255,255,255,0.04);
+  --card2: rgba(255,255,255,0.07);
+  --sidebar-w: 230px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { font-family:'Mukta',sans-serif; background:var(--navy); color:var(--text); display:flex; min-height:100vh; overflow-x:hidden; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width:var(--sidebar-w); background:var(--navy2); border-right:1px solid var(--border);
+  position:fixed; top:0; left:0; bottom:0; z-index:100; display:flex; flex-direction:column;
+  overflow-y:auto;
+}
+.sidebar-logo {
+  padding:20px 18px 16px;
+  border-bottom:1px solid var(--border);
+}
+.sidebar-logo .logo-icon { font-size:28px; margin-bottom:6px; display:block; }
+.sidebar-logo h2 { font-family:'Rajdhani',sans-serif; font-size:16px; color:var(--gold); line-height:1.2; }
+.sidebar-logo p { font-size:10px; color:var(--muted); margin-top:3px; }
+
+.sidebar-section { padding:14px 12px 6px; font-size:10px; font-weight:700; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; }
+
+.nav-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 18px; font-size:13px; font-weight:600;
+  color:var(--muted); cursor:pointer; border-left:3px solid transparent;
+  transition:all 0.2s; border-radius:0 6px 6px 0; margin:1px 8px 1px 0;
+}
+.nav-item:hover { color:var(--text); background:var(--card2); }
+.nav-item.active { color:var(--gold); background:rgba(212,160,23,0.08); border-left-color:var(--gold); }
+.nav-item .nav-icon { font-size:16px; width:20px; text-align:center; flex-shrink:0; }
+
+.sidebar-footer {
+  margin-top:auto; padding:14px 18px;
+  border-top:1px solid var(--border);
+  font-size:11px; color:var(--muted);
+}
+.data-badge {
+  display:inline-block; background:rgba(30,138,74,0.2); color:#4ade80;
+  border:1px solid rgba(74,222,128,0.3); border-radius:4px;
+  padding:2px 8px; font-size:10px; font-weight:700; margin-bottom:6px;
+}
+
+/* ── MAIN ── */
+.main { margin-left:var(--sidebar-w); flex:1; display:flex; flex-direction:column; min-height:100vh; }
+
+.topbar {
+  background:var(--navy2); border-bottom:1px solid var(--border);
+  padding:14px 28px; display:flex; align-items:center; justify-content:space-between;
+  position:sticky; top:0; z-index:50;
+}
+.topbar-title { font-family:'Rajdhani',sans-serif; font-size:20px; font-weight:700; color:var(--white); }
+.topbar-title span { color:var(--gold); }
+.topbar-right { display:flex; align-items:center; gap:12px; }
+.topbar-filter select {
+  background:var(--navy3); border:1px solid var(--border); color:var(--text);
+  padding:6px 12px; border-radius:6px; font-family:'Mukta',sans-serif; font-size:13px; outline:none; cursor:pointer;
+}
+.last-updated { font-size:11px; color:var(--muted); }
+
+.content { padding:24px 28px; flex:1; }
+
+/* ── VIEWS ── */
+.view { display:none; }
+.view.active { display:block; }
+
+/* ── KPI CARDS ── */
+.kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+.kpi-card {
+  background:var(--card2); border:1px solid var(--border); border-radius:12px;
+  padding:18px 20px; position:relative; overflow:hidden; transition:transform 0.2s;
+}
+.kpi-card:hover { transform:translateY(-2px); }
+.kpi-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+}
+.kpi-card.red::before   { background:var(--red); }
+.kpi-card.gold::before  { background:var(--gold); }
+.kpi-card.green::before { background:var(--green); }
+.kpi-card.blue::before  { background:var(--blue); }
+.kpi-card.pink::before  { background:var(--pink); }
+.kpi-card.saffron::before { background:var(--saffron); }
+
+.kpi-icon { font-size:26px; margin-bottom:10px; display:block; }
+.kpi-label { font-size:11px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:4px; }
+.kpi-value { font-family:'Rajdhani',sans-serif; font-size:30px; font-weight:700; color:var(--white); line-height:1; }
+.kpi-value sub { font-size:14px; color:var(--muted); font-family:'Mukta',sans-serif; font-weight:400; }
+.kpi-change { font-size:11px; margin-top:6px; }
+.kpi-change.up { color:#4ade80; }
+.kpi-change.down { color:#f87171; }
+
+/* ── GRID LAYOUTS ── */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px; }
+.grid-1-2 { display:grid; grid-template-columns:1fr 2fr; gap:16px; margin-bottom:16px; }
+.grid-2-1 { display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:16px; }
+
+.panel {
+  background:var(--card2); border:1px solid var(--border); border-radius:12px;
+  padding:20px 22px;
+}
+.panel-title {
+  font-family:'Rajdhani',sans-serif; font-size:16px; font-weight:700; color:var(--white);
+  margin-bottom:16px; display:flex; align-items:center; gap:8px;
+}
+.panel-title .pt-icon { font-size:18px; }
+.panel-subtitle { font-size:11px; color:var(--muted); margin-left:auto; font-family:'Mukta',sans-serif; font-weight:400; }
+
+/* ── STAGE FUNNEL ── */
+.funnel-wrap { display:flex; flex-direction:column; gap:10px; }
+.funnel-row { display:flex; align-items:center; gap:12px; }
+.funnel-bar-bg {
+  flex:1; height:38px; background:rgba(255,255,255,0.05); border-radius:6px; overflow:hidden; position:relative;
+}
+.funnel-bar { height:100%; border-radius:6px; display:flex; align-items:center; padding:0 12px; font-size:13px; font-weight:700; color:white; white-space:nowrap; transition:width 1s ease; }
+.funnel-label { width:110px; font-size:12px; font-weight:700; color:var(--muted); text-align:right; flex-shrink:0; }
+.funnel-count { width:110px; font-size:13px; font-weight:800; color:var(--white); flex-shrink:0; }
+.funnel-pct { width:56px; font-size:11px; color:var(--muted); flex-shrink:0; text-align:right; }
+
+/* ── TABLE ── */
+.dash-table { width:100%; border-collapse:collapse; font-size:13px; }
+.dash-table th { padding:10px 12px; text-align:left; font-size:10px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid var(--border); }
+.dash-table td { padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.04); vertical-align:middle; }
+.dash-table tr:hover td { background:rgba(255,255,255,0.03); }
+.dash-table tr:last-child td { border-bottom:none; }
+
+/* ── RANK BADGE ── */
+.rank-badge {
+  width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:800; flex-shrink:0;
+}
+.rank-1 { background:linear-gradient(135deg,#f59e0b,#d97706); color:#000; }
+.rank-2 { background:linear-gradient(135deg,#94a3b8,#64748b); color:#000; }
+.rank-3 { background:linear-gradient(135deg,#cd7c36,#a85f2a); color:#fff; }
+.rank-n { background:rgba(255,255,255,0.08); color:var(--muted); }
+
+/* ── PERFORMANCE BAR ── */
+.perf-bar { height:6px; border-radius:3px; background:rgba(255,255,255,0.08); overflow:hidden; }
+.perf-fill { height:100%; border-radius:3px; }
+
+/* ── STATUS PILLS ── */
+.pill { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+.pill-green  { background:rgba(30,138,74,0.2);  color:#4ade80; border:1px solid rgba(74,222,128,0.25); }
+.pill-red    { background:rgba(192,40,47,0.2);  color:#f87171; border:1px solid rgba(248,113,113,0.25); }
+.pill-gold   { background:rgba(212,160,23,0.2); color:#fbbf24; border:1px solid rgba(251,191,36,0.25); }
+.pill-blue   { background:rgba(26,74,138,0.3);  color:#93c5fd; border:1px solid rgba(147,197,253,0.25); }
+.pill-orange { background:rgba(244,134,10,0.2); color:#fb923c; border:1px solid rgba(251,146,60,0.25); }
+
+/* ── PENDING TABLE ── */
+.reason-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+.reason-row:last-child { border-bottom:none; }
+.reason-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.reason-name { flex:1; font-size:13px; }
+.reason-count { font-size:14px; font-weight:800; color:var(--white); width:60px; text-align:right; }
+.reason-pct { font-size:11px; color:var(--muted); width:44px; text-align:right; }
+
+/* ── HOSPITAL CARD ── */
+.hosp-type-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.hosp-card {
+  background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:10px;
+  padding:14px 16px; text-align:center;
+}
+.hosp-card .h-icon { font-size:24px; margin-bottom:6px; }
+.hosp-card .h-name { font-size:11px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+.hosp-card .h-val { font-family:'Rajdhani',sans-serif; font-size:22px; font-weight:700; color:var(--white); }
+.hosp-card .h-sub { font-size:11px; color:var(--muted); }
+
+/* ── DISTRICT HEATMAP ── */
+.heatmap-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:6px; }
+.hm-cell {
+  aspect-ratio:1.4; border-radius:6px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; cursor:default;
+  transition:transform 0.2s; font-size:9px; text-align:center; padding:4px;
+}
+.hm-cell:hover { transform:scale(1.08); z-index:2; position:relative; }
+.hm-cell .hmc-name { font-weight:700; color:rgba(255,255,255,0.9); font-size:9px; line-height:1.2; }
+.hm-cell .hmc-val  { font-weight:800; color:white; font-size:11px; margin-top:2px; }
+
+/* ── MINI STAT ── */
+.mini-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:16px; }
+.mini-stat { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:12px 14px; text-align:center; }
+.mini-stat .ms-val { font-family:'Rajdhani',sans-serif; font-size:22px; font-weight:700; color:var(--white); }
+.mini-stat .ms-label { font-size:10px; color:var(--muted); font-weight:600; text-transform:uppercase; }
+
+/* ── CANVAS ── */
+canvas { max-height:240px; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.12); border-radius:4px; }
+
+/* ── MORT TABLE ── */
+.mort-bar-wrap { display:flex; align-items:center; gap:8px; }
+.mort-bar-bg { flex:1; height:8px; background:rgba(255,255,255,0.06); border-radius:4px; overflow:hidden; }
+.mort-bar-fill { height:100%; border-radius:4px; }
+
+.section-sub { font-size:11px; color:var(--muted); margin-bottom:16px; }
+
+/* ── DBT SUMMARY CARDS ── */
+.dbt-cards { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; margin-bottom:20px; }
+.dbt-stage-card {
+  background:var(--card); border:1px solid var(--border); border-radius:10px;
+  padding:12px 10px; text-align:center;
+}
+.dbt-stage-card .ds-stage { font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; }
+.dbt-stage-card .ds-bene { font-family:'Rajdhani',sans-serif; font-size:18px; font-weight:700; color:var(--white); }
+.dbt-stage-card .ds-amt { font-size:10px; color:var(--gold); font-weight:700; margin-top:2px; }
+.dbt-stage-card .ds-pend { font-size:10px; color:#f87171; margin-top:2px; }
+
+/* ── TOP STRIP ── */
+.raj-strip { height:4px; background:repeating-linear-gradient(90deg,var(--saffron) 0,var(--saffron) 12px,var(--navy2) 12px,var(--navy2) 24px,var(--red) 24px,var(--red) 36px,var(--navy2) 36px,var(--navy2) 48px); }
+
+.chart-wrap { position:relative; height:220px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-icon">👧</span>
+    <h2>लाडो प्रोत्साहन योजना</h2>
+    <p>Analytics Dashboard · WCD, GoR</p>
+  </div>
+
+  <div class="sidebar-section">मुख्य डैशबोर्ड</div>
+  <div class="nav-item active" onclick="showView('overview')">
+    <span class="nav-icon">📊</span> अवलोकन (Overview)
+  </div>
+  <div class="nav-item" onclick="showView('stages')">
+    <span class="nav-icon">📈</span> S1 – S7 चरण ट्रैकर
+  </div>
+  <div class="nav-item" onclick="showView('district')">
+    <span class="nav-icon">🗺️</span> जिलावार प्रदर्शन
+  </div>
+  <div class="nav-item" onclick="showView('dbt')">
+    <span class="nav-icon">💳</span> DBT भुगतान ट्रैकर
+  </div>
+
+  <div class="sidebar-section">विश्लेषण</div>
+  <div class="nav-item" onclick="showView('pending')">
+    <span class="nav-icon">⏳</span> लंबित फ़ाइलें
+  </div>
+  <div class="nav-item" onclick="showView('hospital')">
+    <span class="nav-icon">🏥</span> अस्पताल ट्रैकिंग
+  </div>
+  <div class="nav-item" onclick="showView('birth')">
+    <span class="nav-icon">👶</span> जन्म एवं मृत्यु दर
+  </div>
+  <div class="nav-item" onclick="showView('ranking')">
+    <span class="nav-icon">🏆</span> जिला रैंकिंग
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="data-badge">● लाइव डेटा</div>
+    <div>अंतिम अपडेट: 01-04-2026</div>
+    <div style="margin-top:4px;">निदेशालय महिला अधिकारिता</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="raj-strip"></div>
+  <div class="topbar">
+    <div class="topbar-title">लाडो प्रोत्साहन <span>डैशबोर्ड</span></div>
+    <div class="topbar-right">
+      <div class="topbar-filter">
+        <select id="distFilter" onchange="applyFilter()">
+          <option value="all">सभी जिले</option>
+          <option>अजमेर</option><option>अलवर</option><option>बांसवाड़ा</option>
+          <option>बाड़मेर</option><option>भरतपुर</option><option>भीलवाड़ा</option>
+          <option>बीकानेर</option><option>बूंदी</option><option>चित्तौड़गढ़</option>
+          <option>दौसा</option><option>डूंगरपुर</option><option>जयपुर</option>
+          <option>जैसलमेर</option><option>जालौर</option><option>झालावाड़</option>
+          <option>झुंझुनूं</option><option>जोधपुर</option><option>करौली</option>
+          <option>कोटा</option><option>नागौर</option><option>पाली</option>
+          <option>सीकर</option><option>उदयपुर</option><option>चुरू</option>
+        </select>
+      </div>
+      <div class="topbar-filter">
+        <select id="fyFilter">
+          <option>2025-26</option><option>2024-25</option><option>2023-24</option><option>सभी वर्ष</option>
+        </select>
+      </div>
+      <div class="last-updated">📅 01 अप्रैल 2026</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ════════════════════════════════════════
+         VIEW 1: OVERVIEW
+    ════════════════════════════════════════ -->
+    <div class="view active" id="view-overview">
+
+      <div class="kpi-grid">
+        <div class="kpi-card red">
+          <span class="kpi-icon">👩</span>
+          <div class="kpi-label">कुल माताएँ (M)</div>
+          <div class="kpi-value">49.71<sub>लाख</sub></div>
+          <div class="kpi-change up">↑ 3.2% पिछले वर्ष से</div>
+        </div>
+        <div class="kpi-card gold">
+          <span class="kpi-icon">👧</span>
+          <div class="kpi-label">पंजीकृत बालिकाएँ</div>
+          <div class="kpi-value">65.78<sub>लाख</sub></div>
+          <div class="kpi-change up">↑ 2.8% पिछले वर्ष से</div>
+        </div>
+        <div class="kpi-card green">
+          <span class="kpi-icon">✅</span>
+          <div class="kpi-label">पात्र बालिकाएँ</div>
+          <div class="kpi-value">43.43<sub>लाख</sub></div>
+          <div class="kpi-change up">66.03% पंजीकृत में से</div>
+        </div>
+        <div class="kpi-card blue">
+          <span class="kpi-icon">💸</span>
+          <div class="kpi-label">कुल DBT राशि</div>
+          <div class="kpi-value">₹1932<sub>Cr</sub></div>
+          <div class="kpi-change up">77.93% DBT दक्षता</div>
+        </div>
+        <div class="kpi-card saffron">
+          <span class="kpi-icon">🏥</span>
+          <div class="kpi-label">संस्थागत प्रसव</div>
+          <div class="kpi-value">73.66<sub>%</sub></div>
+          <div class="kpi-change up">↑ 1.4% वृद्धि</div>
+        </div>
+        <div class="kpi-card pink">
+          <span class="kpi-icon">💀</span>
+          <div class="kpi-label">बालिका मृत्यु दर</div>
+          <div class="kpi-value">2.73<sub>%</sub></div>
+          <div class="kpi-change down">↓ 0.3% कमी (सुधार)</div>
+        </div>
+        <div class="kpi-card red">
+          <span class="kpi-icon">📋</span>
+          <div class="kpi-label">लंबित फ़ाइलें</div>
+          <div class="kpi-value">1,84,332</div>
+          <div class="kpi-change down">⚠ कार्यवाही आवश्यक</div>
+        </div>
+        <div class="kpi-card gold">
+          <span class="kpi-icon">🏦</span>
+          <div class="kpi-label">S1 लाभार्थी</div>
+          <div class="kpi-value">41.83<sub>लाख</sub></div>
+          <div class="kpi-change up">S1 (₹1045 Cr वितरित)</div>
+        </div>
+      </div>
+
+      <div class="grid-2-1">
+        <div class="panel">
+          <div class="panel-title"><span class="pt-icon">📈</span> वित्त वर्षवार बालिका जन्म एवं मृत्यु <span class="panel-subtitle">FY 2016–26</span></div>
+          <div class="chart-wrap"><canvas id="fyChart"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title"><span class="pt-icon">🏥</span> अस्पताल प्रकार वितरण</div>
+          <div class="chart-wrap"><canvas id="hospPieChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-title"><span class="pt-icon">🗺️</span> जिलेवार पात्रता % (शीर्ष 10)</div>
+          <div class="chart-wrap"><canvas id="distBarChart"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title"><span class="pt-icon">💳</span> चरणवार DBT राशि (करोड़ ₹)</div>
+          <div class="chart-wrap"><canvas id="stageAmtChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         VIEW 2: STAGE TRACKER S1-S7
+    ════════════════════════════════════════ -->
+    <div class="view" id="view-stages">
+
+      <div class="dbt-cards">
+        <div class="dbt-stage-card" style="border-top:3px solid #ef4444;">
+          <div class="ds-stage">S1 — जन्म</div>
+          <div class="ds-bene">41,83,923</div>
+          <div class="ds-amt">₹1,045.99 Cr</div>
+          <div class="ds-pend">₹2,500 / बालिका</div>
+        </div>
+        <div class="dbt-stage-card" style="border-top:3px solid #f97316;">
+          <div class="ds-stage">S2 — टीका</div>
+          <div class="ds-bene">33,03,456</div>
+          <div class="ds-amt">₹834.23 Cr</div>
+          <div class="ds-pend">₹2,500 / बालिका</div>
+        </div>
+        <div class="dbt-stage-card" style="border-top:3px solid #eab308;">
+          <div class="ds-stage">S3 — कक्षा 1</div>
+          <div class="ds-bene">1,31,834</div>
+          <div class="ds-amt">₹52.73 Cr</div>
+          <div class="ds-pend">₹4,000 / बालिका</div>
+        </div>
+        <div class="dbt-stage-card" style="border-top:3px solid #22c55e;">
+          <div class="ds-stage">S4 — कक्षा 6</div>
+          <div class="ds-bene">—</div>
+          <div class="ds-amt">₹0.00 Cr</div>
+          <div class="ds-pend">₹5,000 / बालिका</div>
+        </div>
+        <div class="dbt-stage-card" style="border-top:3px solid #06b6d4;">
+          <div class="ds-stage">S5 — कक्षा 10</div>
+          <div class="ds-bene">—</div>
+          <div class="ds-amt">₹0.00 Cr</div>
+          <div class="ds-pend">₹11,000 / बालिका</div>
+        </div>
+        <div class="dbt-stage-card" style="border-top:3px solid #8b5cf6;">
+          <div class="ds-stage">S6 — कक्षा 12</div>
+          <div class="ds-bene">—</div>
+          <div class="ds-amt">₹0.00 Cr</div>
+          <div class="ds-pend">₹25,000 / बालिका</div>
+        </div>
+        <div class="dbt-stage-card" style="border-top:3px solid #d4a017;">
+          <div class="ds-stage">S7 — स्नातक</div>
+          <div class="ds-bene">—</div>
+          <div class="ds-amt">₹0.00 Cr</div>
+          <div class="ds-pend">₹1,00,000 / बालिका</div>
+        </div>
+      </div>
+
+      <div class="grid-1-2">
+        <div class="panel">
+          <div class="panel-title"><span class="pt-icon">🔻</span> चरण-रूपांतरण फ़नल</div>
+          <div class="funnel-wrap" id="funnelWrap">
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title"><span class="pt-icon">📊</span> चरणवार लाभार्थी तुलना</div>
+          <div class="chart-wrap"><canvas id="stageBarChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-title"><span class="pt-icon">📋</span> S1 से S3 — जिलेवार विस्तार</div>
+        <div style="overflow-x:auto;">
+          <table class="dash-table" id="stageDistTable">
+            <thead>
+              <tr>
+                <th>जिला</th>
+                <th>S1 (जन्म)</th>
+                <th>S2 (टीका)</th>
+                <th>S3 (क.1)</th>
+                <th>S1→S2 रूपांतरण</th>
+                <th>S2→S3 रूपांतरण</th>
+                <th>S1 राशि (₹ Cr)</th>
+                <th>S2 राशि (₹ Cr)</th>
+                <th>प्रदर्शन</th>
+              </tr>
+            </thead>
+            <tbody id="stageDistBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         VIEW 3: DISTRICT PERFORMANCE
+    ════════════════════════════════════════ -->
+    <div class="view" id="view-district">
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-title"><span class="pt-icon">🌡️</span> जिलेवार पात्रता % — हीटमैप</div>
+        <div class="heatmap-grid" id="heatmapGrid"></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-title"><span class="pt-icon">📊</span> जिलेवार बालिका जन्म (लाख)</div>
+          <div class="chart-wrap"><canvas id="distGirlsChart"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title"><span class="pt-icon">💰</span> जिलेवार S1 राशि वितरण (करोड़)</div>
+          <div class="chart-wrap"><canvas id="distAmtChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         VIEW 4: DBT PAYMENT TRACKER
+    ════════════════════════════════════════ -->
+    <div class="view" id="view-dbt">
+      <div class="kpi-grid">
+        <div class="kpi-card green">
+          <span class="kpi-icon">✅</span>
+          <div class="kpi-label">कुल DBT भुगतान</div>
+          <div class="kpi-value">₹1,932<sub>Cr</sub></div>
+          <div class="kpi-change up">S1+S2+S3 संयुक्त</div>
+        </div>
+        <div class="kpi-card red">
+          <span class="kpi-icon">⏳</span>
+          <div class="kpi-label">शेष राशि (S1)</div>
+          <div class="kpi-value">₹218<sub>Cr</sub></div>
+          <div class="kpi-change down">⚠ 17.3% लंबित</div>
+        </div>
+        <div class="kpi-card gold">
+          <span class="kpi-icon">📊</span>
+          <div class="kpi-label">DBT सफलता दर</div>
+          <div class="kpi-value">77.93<sub>%</sub></div>
+          <div class="kpi-change up">↑ 2.1% सुधार</div>
+        </div>
+        <div class="kpi-card blue">
+          <span class="kpi-icon">🔗</span>
+          <div class="kpi-label">जन-आधार लिंक्ड</div>
+          <div class="kpi-value">54.21<sub>लाख</sub></div>
+          <div class="kpi-change up">82.4% बालिकाएँ</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-title"><span class="pt-icon">📈</span> माहवार DBT ट्रेंड (2025-26)</div>
+          <div class="chart-wrap"><canvas id="dbtTrendChart"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title"><span class="pt-icon">🔄</span> भुगतान स्थिति वितरण</div>
+          <div class="chart-wrap"><canvas id="dbtStatusChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><span class="pt-icon">🏦</span> जिलेवार DBT प्रदर्शन</div>
+        <div style="overflow-x:auto;">
+          <table class="dash-table" id="dbtDistTable">
+            <thead>
+              <tr>
+                <th>जिला</th>
+                <th>कुल लाभार्थी</th>
+                <th>भुगतान हुए</th>
+                <th>लंबित</th>
+                <th>DBT %</th>
+                <th>कुल राशि (₹Cr)</th>
+                <th>शेष राशि (₹Cr)</th>
+                <th>स्थिति</th>
+              </tr>
+            </thead>
+            <tbody id="dbtDistBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         VIEW 5: PENDING FILES
+    ════════════════════════════════════════ -->
+    <div class="view" id="view-pending">
+      <div class="mini-stats">
+        <div class="mini-stat">
+          <div class="ms-val" style="color:#f87171;">1,84,332</div>
+          <div class="ms-label">कुल लंबित</div>
+        </div>
+        <div class="mini-stat">
+          <div class="ms-val" style="color:#fbbf24;">72,440</div>
+          <div class="ms-label">जनाधार समस्या</div>
+        </div>
+        <div class="mini-stat">
+          <div class="ms-val" style="color:#60a5fa;">43,218</div>
+          <div class="ms-label">दस्तावेज़ अपूर्ण</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-title"><span class="pt-icon">⚠️</span> लंबित फ़ाइल — कारणवार</div>
+          <div id="pendingReasons"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title"><span class="pt-icon">📊</span> कारण वितरण चार्ट</div>
+          <div class="chart-wrap"><canvas id="pendingChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><span class="pt-icon">🗺️</span> जिलेवार लंबित फ़ाइलें — विवरण</div>
+        <div style="overflow-x:auto;">
+          <table class="dash-table" id="pendingDistTable">
+            <thead>
+              <tr>
+                <th>जिला</th>
+                <th>कुल लंबित</th>
+                <th>जनाधार समस्या</th>
+                <th>दस्तावेज़ अपूर्ण</th>
+                <th>बैंक मिसमैच</th>
+                <th>तकनीकी</th>
+                <th>प्राथमिकता</th>
+                <th>नोडल अधिकारी</th>
+              </tr>
+            </thead>
+            <tbody id="pendingDistBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         VIEW 6: HOSPITAL TRACKING
+    ════════════════════════════════════════ -->
+    <div class="view" id="view-hospital">
+      <div class="hosp-type-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:20px;">
+        <div class="hosp-card" style="border-top:3px solid var(--green);">
+          <div class="h-icon">🏛️</div>
+          <div class="h-name">सरकारी</div>
+          <div class="h-val">36,61,602</div>
+          <div class="h-sub">73.66% — 4,14,5535 पात्र</div>
+        </div>
+        <div class="hosp-card" style="border-top:3px solid var(--blue);">
+          <div class="h-icon">🏥</div>
+          <div class="h-name">निजी</div>
+          <div class="h-val">11,29,022</div>
+          <div class="h-sub">22.71% — 0 पात्र</div>
+        </div>
+        <div class="hosp-card" style="border-top:3px solid var(--gold);">
+          <div class="h-icon">✅</div>
+          <div class="h-name">अनुमोदित निजी</div>
+          <div class="h-val">2,32,039</div>
+          <div class="h-sub">4.67% — 1,98,365 पात्र</div>
+        </div>
+        <div class="hosp-card" style="border-top:3px solid var(--pink);">
+          <div class="h-icon">🏠</div>
+          <div class="h-name">घरेलू प्रसव</div>
+          <div class="h-val">1,47,238</div>
+          <div class="h-sub">2.96% — 0 पात्र</div>
+        </div>
+        <div class="hosp-card" style="border-top:3px solid var(--red);">
+          <div class="h-icon">🚗</div>
+          <div class="h-name">अन्य राज्य</div>
+          <div class="h-val">1,47,208</div>
+          <div class="h-sub">2.96% — 3 पात्र</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-title"><span class="pt-icon">📊</span> संस्थागत बनाम घरेलू प्रसव ट्रेंड</div>
+          <div class="chart-wrap"><canvas id="hospTrendChart"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title"><span class="pt-icon">🍕</span> अस्पताल प्रकार वितरण</div>
+          <div class="chart-wrap"><canvas id="hospTypeChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><span class="pt-icon">🏥</span> जिलेवार संस्थागत प्रसव दर</div>
+        <div style="overflow-x:auto;">
+          <table class="dash-table" id="hospDistTable">
+            <thead>
+              <tr>
+                <th>जिला</th>
+                <th>कुल प्रसव</th>
+                <th>सरकारी</th>
+                <th>निजी (JSY)</th>
+                <th>घरेलू</th>
+                <th>संस्थागत %</th>
+                <th>JSY % पात्र</th>
+                <th>लक्ष्य</th>
+              </tr>
+            </thead>
+            <tbody id="hospDistBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         VIEW 7: BIRTH & MORTALITY
+    ════════════════════════════════════════ -->
+    <div class="view" id="view-birth">
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="kpi-card red">
+          <span class="kpi-icon">👶</span>
+          <div class="kpi-label">कुल बालिका जन्म</div>
+          <div class="kpi-value">65.78<sub>लाख</sub></div>
+          <div class="kpi-change">2016 से अब तक</div>
+        </div>
+        <div class="kpi-card gold">
+          <span class="kpi-icon">⚖️</span>
+          <div class="kpi-label">W/G अनुपात</div>
+          <div class="kpi-value">1.32</div>
+          <div class="kpi-change up">माँ/बालिका अनुपात</div>
+        </div>
+        <div class="kpi-card green">
+          <span class="kpi-icon">📉</span>
+          <div class="kpi-label">सर्वाधिक मृत्यु दर</div>
+          <div class="kpi-value">3.73<sub>%</sub></div>
+          <div class="kpi-change down">उदयपुर — सर्वाधिक</div>
+        </div>
+        <div class="kpi-card blue">
+          <span class="kpi-icon">🎯</span>
+          <div class="kpi-label">न्यूनतम मृत्यु दर</div>
+          <div class="kpi-value">1.26<sub>%</sub></div>
+          <div class="kpi-change up">2025-26 — सर्वोत्तम</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-title"><span class="pt-icon">📉</span> वर्षवार मृत्यु दर ट्रेंड</div>
+          <div class="chart-wrap"><canvas id="mortTrendChart"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title"><span class="pt-icon">👶</span> वर्षवार बालिका जन्म ट्रेंड</div>
+          <div class="chart-wrap"><canvas id="birthTrendChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><span class="pt-icon">🗺️</span> जिलेवार — बालिका जन्म, पात्रता एवं मृत्यु दर</div>
+        <div style="overflow-x:auto;">
+          <table class="dash-table" id="birthDistTable">
+            <thead>
+              <tr>
+                <th>जिला</th>
+                <th>माताएँ</th>
+                <th>बालिका जन्म</th>
+                <th>पात्र %</th>
+                <th>मृत्यु संख्या</th>
+                <th>मृत्यु दर %</th>
+                <th>मृत्यु दर बार</th>
+                <th>स्थिति</th>
+              </tr>
+            </thead>
+            <tbody id="birthDistBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         VIEW 8: DISTRICT RANKING
+    ════════════════════════════════════════ -->
+    <div class="view" id="view-ranking">
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-title"><span class="pt-icon">🏆</span> समग्र जिला प्रदर्शन रैंकिंग <span class="panel-subtitle">DBT% + पात्रता% + मृत्यु-कमी + संस्थागत प्रसव पर आधारित</span></div>
+        <div style="overflow-x:auto;">
+          <table class="dash-table" id="rankingTable">
+            <thead>
+              <tr>
+                <th>रैंक</th>
+                <th>जिला</th>
+                <th>समग्र स्कोर</th>
+                <th>DBT %</th>
+                <th>पात्रता %</th>
+                <th>संस्थागत %</th>
+                <th>मृत्यु दर %</th>
+                <th>लंबित फ़ाइलें</th>
+                <th>प्रदर्शन</th>
+                <th>ग्रेड</th>
+              </tr>
+            </thead>
+            <tbody id="rankingBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-title"><span class="pt-icon">🥇</span> शीर्ष 10 जिले — स्कोर</div>
+          <div class="chart-wrap"><canvas id="top10Chart"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title"><span class="pt-icon">⚠️</span> निम्न प्रदर्शन जिले — सुधार आवश्यक</div>
+          <div id="lowPerformers"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end content -->
+</main><!-- end main -->
+
+<script>
+// ══════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════
+const districts = [
+  { name:"जयपुर",       mothers:230402, girls:266091, eligible:206994, mortality:5971, dbt:82, hosp_inst:81, pending:6420 },
+  { name:"जोधपुर",      mothers:198479, girls:245208, eligible:211361, mortality:5961, dbt:79, hosp_inst:78, pending:7812 },
+  { name:"उदयपुर",      mothers:173720, girls:214093, eligible:186028, mortality:7981, dbt:76, hosp_inst:72, pending:9340 },
+  { name:"बीकानेर",     mothers:164946, girls:212736, eligible:181272, mortality:5662, dbt:84, hosp_inst:80, pending:4210 },
+  { name:"भीलवाड़ा",    mothers:146338, girls:182871, eligible:166257, mortality:5512, dbt:88, hosp_inst:85, pending:3110 },
+  { name:"बांसवाड़ा",   mothers:143842, girls:195945, eligible:172051, mortality:6445, dbt:72, hosp_inst:65, pending:11230 },
+  { name:"अजमेर",       mothers:139410, girls:173590, eligible:152305, mortality:5485, dbt:81, hosp_inst:79, pending:5620 },
+  { name:"बाड़मेर",     mothers:114200, girls:153399, eligible:125944, mortality:5156, dbt:68, hosp_inst:60, pending:13440 },
+  { name:"अलवर",        mothers:112841, girls:146208, eligible:132056, mortality:4272, dbt:83, hosp_inst:77, pending:5840 },
+  { name:"नागौर",       mothers:108324, girls:138762, eligible:119430, mortality:4120, dbt:80, hosp_inst:74, pending:6230 },
+  { name:"सीकर",        mothers:98210,  girls:128340, eligible:114820, mortality:3840, dbt:86, hosp_inst:83, pending:3940 },
+  { name:"कोटा",        mothers:97620,  girls:118940, eligible:104230, mortality:3210, dbt:89, hosp_inst:88, pending:2840 },
+  { name:"चित्तौड़गढ़",  mothers:94320,  girls:121450, eligible:109140, mortality:4680, dbt:77, hosp_inst:71, pending:7640 },
+  { name:"झुंझुनूं",    mothers:91240,  girls:112830, eligible:99480,  mortality:3120, dbt:87, hosp_inst:84, pending:3210 },
+  { name:"पाली",        mothers:88740,  girls:110230, eligible:96340,  mortality:3780, dbt:78, hosp_inst:73, pending:6480 },
+  { name:"दौसा",        mothers:86420,  girls:108940, eligible:94210,  mortality:3540, dbt:75, hosp_inst:70, pending:8120 },
+  { name:"करौली",       mothers:84320,  girls:108120, eligible:91840,  mortality:3920, dbt:71, hosp_inst:66, pending:9840 },
+  { name:"भरतपुर",      mothers:82140,  girls:104320, eligible:88640,  mortality:3480, dbt:73, hosp_inst:68, pending:8640 },
+  { name:"जालौर",       mothers:80420,  girls:102840, eligible:86420,  mortality:3640, dbt:70, hosp_inst:62, pending:10240 },
+  { name:"डूंगरपुर",    mothers:78340,  girls:101280, eligible:84320,  mortality:4120, dbt:67, hosp_inst:58, pending:12840 },
+  { name:"टोंक",        mothers:74320,  girls:94280,  eligible:80840,  mortality:2980, dbt:80, hosp_inst:76, pending:5420 },
+  { name:"जैसलमेर",     mothers:42180,  girls:54320,  eligible:44280,  mortality:1840, dbt:64, hosp_inst:55, pending:7240 },
+  { name:"बूंदी",       mothers:62840,  girls:80420,  eligible:69840,  mortality:2640, dbt:82, hosp_inst:78, pending:4810 },
+  { name:"चुरू",        mothers:84120,  girls:106280, eligible:92840,  mortality:3240, dbt:85, hosp_inst:82, pending:3820 },
+];
+
+const fyData = {
+  years: ['2016-17','2017-18','2018-19','2019-20','2020-21','2021-22','2022-23','2023-24','2024-25','2025-26'],
+  mothers:[579196,681876,675524,679121,663106,653616,681877,676144,650423,599851],
+  girls:  [582107,685700,679325,682969,666751,657314,686090,680503,654596,603581],
+  mortality:[16460,22037,21685,19858,18949,19160,20027,18249,16259,7575],
+};
+
+const pendingReasons = [
+  { name:"जनाधार लिंक न होना",         count:72440, color:"#ef4444" },
+  { name:"दस्तावेज़ अपूर्ण / गलत",     count:43218, color:"#f97316" },
+  { name:"बैंक खाता मिसमैच",           count:28640, color:"#eab308" },
+  { name:"तकनीकी / पोर्टल त्रुटि",    count:18420, color:"#8b5cf6" },
+  { name:"माँ का नाम भिन्न",           count:12840, color:"#06b6d4" },
+  { name:"जन्म प्रमाण पत्र अनुपस्थित", count:8774,  color:"#ec4899" },
+];
+
+const hospFyData = {
+  years:['2019-20','2020-21','2021-22','2022-23','2023-24','2024-25'],
+  govt: [68.2,69.1,70.4,71.8,72.9,73.66],
+  home: [7.2,6.8,6.1,5.4,4.8,2.96],
+};
+
+// ══════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  // Lazy render charts on first show
+  if (!window._rendered) window._rendered = {};
+  if (!window._rendered[id]) { window._rendered[id] = true; initView(id); }
+}
+
+function applyFilter() {
+  const d = document.getElementById('distFilter').value;
+  console.log('Filter:', d);
+}
+
+// ══════════════════════════════════════════════
+//  CHART HELPERS
+// ══════════════════════════════════════════════
+const CC = { red:'#ef4444', gold:'#d4a017', green:'#1e8a4a', blue:'#1a4a8a', saffron:'#f4860a', pink:'#e8627a',
+             muted:'rgba(255,255,255,0.15)', text:'rgba(255,255,255,0.7)' };
+
+Chart.defaults.color = 'rgba(255,255,255,0.6)';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.07)';
+Chart.defaults.font.family = 'Mukta';
+
+function mkChart(id, type, labels, datasets, opts={}) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  return new Chart(el, { type, data:{labels, datasets}, options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:opts.legend??false, labels:{color:'rgba(255,255,255,0.7)',font:{size:11}}},
+             tooltip:{backgroundColor:'rgba(13,30,61,0.95)',titleColor:'#fff',bodyColor:'rgba(255,255,255,0.8)',borderColor:'rgba(255,255,255,0.1)',borderWidth:1}},
+    scales: type==='pie'||type==='doughnut' ? {} : {
+      x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'rgba(255,255,255,0.6)',font:{size:10}}},
+      y:{grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'rgba(255,255,255,0.6)',font:{size:10}}}
+    },
+    ...opts
+  }});
+}
+
+// ══════════════════════════════════════════════
+//  INIT OVERVIEW
+// ══════════════════════════════════════════════
+function initOverview() {
+  mkChart('fyChart','bar', fyData.years, [
+    {label:'बालिका जन्म',    data:fyData.girls,    backgroundColor:'rgba(212,160,23,0.7)',  borderRadius:4},
+    {label:'माताएँ',         data:fyData.mothers,  backgroundColor:'rgba(26,74,138,0.6)',   borderRadius:4},
+    {label:'मृत्यु',        data:fyData.mortality, backgroundColor:'rgba(192,40,47,0.8)',   borderRadius:4, yAxisID:'y1'},
+  ], {legend:true, scales:{
+    x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'rgba(255,255,255,0.6)',font:{size:9}}},
+    y:{grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'rgba(255,255,255,0.6)'}},
+    y1:{position:'right',grid:{display:false},ticks:{color:'#ef4444'}},
+  }});
+
+  mkChart('hospPieChart','doughnut',
+    ['सरकारी','निजी','JSY निजी','घरेलू','अन्य राज्य'],
+    [{data:[73.66,22.71,4.67,2.96,2.96], backgroundColor:['#1e8a4a','#1a4a8a','#d4a017','#e8627a','#6b7280'],
+      borderColor:'rgba(255,255,255,0.1)', borderWidth:2}],
+    {legend:true, cutout:'60%'}
+  );
+
+  const top10 = [...districts].sort((a,b)=>b.eligible/b.girls - a.eligible/a.girls).slice(0,10);
+  mkChart('distBarChart','bar', top10.map(d=>d.name),
+    [{label:'पात्रता %', data:top10.map(d=>Math.round(d.eligible/d.girls*100)),
+      backgroundColor:'rgba(212,160,23,0.7)', borderRadius:4}],
+    {indexAxis:'y', scales:{
+      x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'rgba(255,255,255,0.6)',font:{size:9}},max:100},
+      y:{grid:{display:false},ticks:{color:'rgba(255,255,255,0.7)',font:{size:10}}}
+    }}
+  );
+
+  mkChart('stageAmtChart','bar',['S1','S2','S3','S4','S5','S6','S7'],
+    [{label:'राशि (₹ Cr)', data:[1045.99,834.23,52.73,0,0,0,0],
+      backgroundColor:['#ef4444','#f97316','#eab308','#22c55e','#06b6d4','#8b5cf6','#d4a017'],
+      borderRadius:6}]
+  );
+}
+
+// ══════════════════════════════════════════════
+//  INIT STAGES
+// ══════════════════════════════════════════════
+function initStages() {
+  const stages = [
+    {label:'S1 — जन्म पर',        count:4183923, max:4183923, color:'#ef4444'},
+    {label:'S2 — टीकाकरण',        count:3303456, max:4183923, color:'#f97316'},
+    {label:'S3 — कक्षा 1',        count:131834,  max:4183923, color:'#eab308'},
+    {label:'S4 — कक्षा 6 (आगामी)',count:0,       max:4183923, color:'#22c55e'},
+    {label:'S5 — कक्षा 10',       count:0,       max:4183923, color:'#06b6d4'},
+    {label:'S6 — कक्षा 12',       count:0,       max:4183923, color:'#8b5cf6'},
+    {label:'S7 — स्नातक',         count:0,       max:4183923, color:'#d4a017'},
+  ];
+  const wrap = document.getElementById('funnelWrap');
+  wrap.innerHTML = stages.map(s=>{
+    const pct = s.max>0 ? Math.round(s.count/s.max*100) : 0;
+    const barW = pct > 0 ? Math.max(pct, 3) : 0;
+    return `<div class="funnel-row">
+      <div class="funnel-label">${s.label}</div>
+      <div class="funnel-bar-bg">
+        <div class="funnel-bar" style="width:${barW}%;background:${s.color};">${s.count>0?s.count.toLocaleString('hi-IN'):''}</div>
+      </div>
+      <div class="funnel-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+
+  mkChart('stageBarChart','bar',
+    ['S1','S2','S3'],
+    [{label:'लाभार्थी', data:[4183923,3303456,131834],
+      backgroundColor:['#ef4444','#f97316','#eab308'], borderRadius:6}]
+  );
+
+  // Stage district table
+  const tbody = document.getElementById('stageDistBody');
+  tbody.innerHTML = districts.slice(0,20).map((d,i)=>{
+    const s1 = Math.round(d.girls * 0.637);
+    const s2 = Math.round(s1 * 0.79);
+    const s3 = Math.round(s1 * 0.031);
+    const conv12 = Math.round(s2/s1*100);
+    const conv23 = Math.round(s3/s2*100);
+    const a1 = (s1*2500/10000000).toFixed(2);
+    const a2 = (s2*2500/10000000).toFixed(2);
+    const perf = conv12>=80?'pill-green':conv12>=65?'pill-gold':'pill-red';
+    return `<tr>
+      <td><strong style="color:var(--white);">${d.name}</strong></td>
+      <td>${s1.toLocaleString('hi-IN')}</td>
+      <td>${s2.toLocaleString('hi-IN')}</td>
+      <td>${s3.toLocaleString('hi-IN')}</td>
+      <td><span class="${conv12>=80?'pill-green':conv12>=65?'pill-gold':'pill-red'} pill">${conv12}%</span></td>
+      <td><span class="${conv23>=3?'pill-green':'pill-gold'} pill">${conv23}%</span></td>
+      <td>${a1}</td>
+      <td>${a2}</td>
+      <td><span class="${perf} pill">${conv12>=80?'उत्तम':conv12>=65?'औसत':'निम्न'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+//  INIT DISTRICT
+// ══════════════════════════════════════════════
+function initDistrict() {
+  // Heatmap
+  const grid = document.getElementById('heatmapGrid');
+  const sorted = [...districts].sort((a,b)=>b.eligible/b.girls - a.eligible/a.girls);
+  const max_pct = Math.max(...sorted.map(d=>d.eligible/d.girls));
+  grid.innerHTML = sorted.map(d=>{
+    const pct = Math.round(d.eligible/d.girls*100);
+    const intensity = pct/100;
+    const bg = pct>=88?'#1e6b3a':pct>=80?'#1a8a4a':pct>=70?'#d4a017':pct>=60?'#f97316':'#c0282f';
+    return `<div class="hm-cell" style="background:${bg};" title="${d.name}: ${pct}% पात्र">
+      <div class="hmc-name">${d.name}</div>
+      <div class="hmc-val">${pct}%</div>
+    </div>`;
+  }).join('');
+
+  const top12 = [...districts].sort((a,b)=>b.girls-a.girls).slice(0,12);
+  mkChart('distGirlsChart','bar', top12.map(d=>d.name),
+    [{label:'बालिका जन्म', data:top12.map(d=>d.girls),
+      backgroundColor:'rgba(232,98,122,0.7)', borderRadius:4}],
+    {scales:{
+      x:{grid:{display:false},ticks:{color:'rgba(255,255,255,0.6)',font:{size:9}}},
+      y:{grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'rgba(255,255,255,0.6)'}}
+    }}
+  );
+
+  const top12a = [...districts].sort((a,b)=>b.mothers-a.mothers).slice(0,12);
+  const s1AmtData = top12a.map(d=>+(d.girls*0.637*2500/10000000).toFixed(1));
+  mkChart('distAmtChart','bar', top12a.map(d=>d.name),
+    [{label:'S1 राशि (₹ Cr)', data:s1AmtData,
+      backgroundColor:'rgba(212,160,23,0.7)', borderRadius:4}],
+    {scales:{
+      x:{grid:{display:false},ticks:{color:'rgba(255,255,255,0.6)',font:{size:9}}},
+      y:{grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'rgba(255,255,255,0.6)'}}
+    }}
+  );
+}
+
+// ══════════════════════════════════════════════
+//  INIT DBT
+// ══════════════════════════════════════════════
+function initDBT() {
+  const months = ['अप्रैल','मई','जून','जुलाई','अग.','सित.','अक्टू.','नव.','दिस.','जन.','फर.','मार्च'];
+  const dbtAmt = [142,168,155,178,162,188,195,172,184,168,192,228];
+  mkChart('dbtTrendChart','line', months,
+    [{label:'DBT राशि (₹ Cr)', data:dbtAmt, borderColor:'#d4a017', backgroundColor:'rgba(212,160,23,0.15)',
+      fill:true, tension:0.4, pointBackgroundColor:'#d4a017', pointRadius:4}],
+    {scales:{
+      x:{grid:{display:false},ticks:{color:'rgba(255,255,255,0.6)',font:{size:9}}},
+      y:{grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'rgba(255,255,255,0.6)'}}
+    }}
+  );
+
+  mkChart('dbtStatusChart','doughnut',
+    ['सफल DBT','लंबित','तकनीकी त्रुटि','अस्वीकृत'],
+    [{data:[77.93,12.4,6.8,2.87],
+      backgroundColor:['#1e8a4a','#f97316','#8b5cf6','#ef4444'],
+      borderColor:'rgba(255,255,255,0.1)', borderWidth:2}],
+    {legend:true, cutout:'55%'}
+  );
+
+  const tbody = document.getElementById('dbtDistBody');
+  tbody.innerHTML = districts.map((d,i)=>{
+    const total = Math.round(d.girls*0.637);
+    const paid  = Math.round(total * d.dbt/100);
+    const pend  = total - paid;
+    const amt   = +(paid*2500/10000000).toFixed(2);
+    const rem   = +(pend*2500/10000000).toFixed(2);
+    const status = d.dbt>=85?'pill-green':d.dbt>=75?'pill-gold':'pill-red';
+    return `<tr>
+      <td><strong style="color:var(--white);">${d.name}</strong></td>
+      <td>${total.toLocaleString('hi-IN')}</td>
+      <td style="color:#4ade80;">${paid.toLocaleString('hi-IN')}</td>
+      <td style="color:#f87171;">${pend.toLocaleString('hi-IN')}</td>
+      <td><span class="${status} pill">${d.dbt}%</span></td>
+      <td>${amt}</td>
+      <td style="color:#f87171;">${rem}</td>
+      <td>${d.dbt>=85?'<span class="pill pill-green">उत्तम</span>':d.dbt>=75?'<span class="pill pill-gold">ठीक</span>':'<span class="pill pill-red">सुधार चाहिए</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+//  INIT PENDING
+// ══════════════════════════════════════════════
+function initPending() {
+  const total = pendingReasons.reduce((s,r)=>s+r.count,0);
+  const wrap = document.getElementById('pendingReasons');
+  wrap.innerHTML = pendingReasons.map(r=>`
+    <div class="reason-row">
+      <div class="reason-dot" style="background:${r.color};"></div>
+      <div class="reason-name">${r.name}</div>
+      <div style="flex:1;padding:0 12px;">
+        <div class="perf-bar"><div class="perf-fill" style="width:${Math.round(r.count/total*100)}%;background:${r.color};"></div></div>
+      </div>
+      <div class="reason-count">${r.count.toLocaleString('hi-IN')}</div>
+      <div class="reason-pct">${Math.round(r.count/total*100)}%</div>
+    </div>`).join('');
+
+  mkChart('pendingChart','doughnut',
+    pendingReasons.map(r=>r.name),
+    [{data:pendingReasons.map(r=>r.count),
+      backgroundColor:pendingReasons.map(r=>r.color),
+      borderColor:'rgba(255,255,255,0.1)', borderWidth:2}],
+    {legend:true, cutout:'50%'}
+  );
+
+  const priorities = ['🔴 उच्च','🔴 उच्च','🟡 मध्यम','🟡 मध्यम','🟢 सामान्य','🟢 सामान्य',
+                       '🔴 उच्च','🟡 मध्यम','🔴 उच्च','🟢 सामान्य'];
+  const tbody = document.getElementById('pendingDistBody');
+  tbody.innerHTML = districts.map((d,i)=>{
+    const total = Math.round(d.pending);
+    const jana  = Math.round(total*0.39);
+    const docs  = Math.round(total*0.23);
+    const bank  = Math.round(total*0.15);
+    const tech  = total-jana-docs-bank;
+    const prio  = total>10000?'🔴 उच्च':total>5000?'🟡 मध्यम':'🟢 सामान्य';
+    return `<tr>
+      <td><strong style="color:var(--white);">${d.name}</strong></td>
+      <td style="color:#f87171;font-weight:700;">${total.toLocaleString('hi-IN')}</td>
+      <td>${jana.toLocaleString('hi-IN')}</td>
+      <td>${docs.toLocaleString('hi-IN')}</td>
+      <td>${bank.toLocaleString('hi-IN')}</td>
+      <td>${tech.toLocaleString('hi-IN')}</td>
+      <td>${prio}</td>
+      <td style="color:var(--muted);font-size:11px;">DD/WCD</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+//  INIT HOSPITAL
+// ══════════════════════════════════════════════
+function initHospital() {
+  mkChart('hospTrendChart','line',
+    hospFyData.years,
+    [
+      {label:'सरकारी संस्थागत %', data:hospFyData.govt, borderColor:'#1e8a4a', backgroundColor:'rgba(30,138,74,0.15)', fill:true, tension:0.4, pointRadius:4},
+      {label:'घरेलू प्रसव %',     data:hospFyData.home, borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.1)',  fill:true, tension:0.4, pointRadius:4},
+    ],
+    {legend:true, scales:{
+      x:{grid:{display:false},ticks:{color:'rgba(255,255,255,0.6)',font:{size:9}}},
+      y:{grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'rgba(255,255,255,0.6)'}}
+    }}
+  );
+
+  mkChart('hospTypeChart','doughnut',
+    ['सरकारी','निजी','JSY निजी','घरेलू','अन्य राज्य'],
+    [{data:[73.66,22.71,4.67,2.96,2.96],
+      backgroundColor:['#1e8a4a','#1a4a8a','#d4a017','#ef4444','#6b7280'],
+      borderColor:'rgba(255,255,255,0.1)', borderWidth:2}],
+    {legend:true, cutout:'55%'}
+  );
+
+  const tbody = document.getElementById('hospDistBody');
+  tbody.innerHTML = districts.map(d=>{
+    const total = d.girls;
+    const govt  = Math.round(total*d.hosp_inst/100*0.8);
+    const jsy   = Math.round(total*d.hosp_inst/100*0.2);
+    const home  = Math.round(total*(100-d.hosp_inst)/100*0.7);
+    const jsy_pct = Math.round(jsy/d.eligible*100);
+    const target = d.hosp_inst<70?'🔴 < 70%':d.hosp_inst<80?'🟡 70-80%':'🟢 > 80%';
+    return `<tr>
+      <td><strong style="color:var(--white);">${d.name}</strong></td>
+      <td>${total.toLocaleString('hi-IN')}</td>
+      <td style="color:#4ade80;">${govt.toLocaleString('hi-IN')}</td>
+      <td>${jsy.toLocaleString('hi-IN')}</td>
+      <td style="color:#f87171;">${home.toLocaleString('hi-IN')}</td>
+      <td><span class="${d.hosp_inst>=80?'pill-green':d.hosp_inst>=70?'pill-gold':'pill-red'} pill">${d.hosp_inst}%</span></td>
+      <td>${jsy_pct}%</td>
+      <td>${target}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+//  INIT BIRTH & MORTALITY
+// ══════════════════════════════════════════════
+function initBirth() {
+  mkChart('mortTrendChart','line', fyData.years,
+    [{label:'मृत्यु दर %',
+      data:fyData.mortality.map((m,i)=>+(m/fyData.girls[i]*100).toFixed(2)),
+      borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.15)', fill:true, tension:0.4,
+      pointBackgroundColor:'#ef4444', pointRadius:4}],
+    {scales:{
+      x:{grid:{display:false},ticks:{color:'rgba(255,255,255,0.6)',font:{size:9}}},
+      y:{grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'rgba(255,255,255,0.6)'}}
+    }}
+  );
+
+  mkChart('birthTrendChart','bar', fyData.years,
+    [{label:'बालिका जन्म', data:fyData.girls, backgroundColor:'rgba(232,98,122,0.7)', borderRadius:4},
+     {label:'माताएँ',      data:fyData.mothers, backgroundColor:'rgba(26,74,138,0.5)', borderRadius:4}],
+    {legend:true, scales:{
+      x:{grid:{display:false},ticks:{color:'rgba(255,255,255,0.6)',font:{size:9}}},
+      y:{grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'rgba(255,255,255,0.6)'}}
+    }}
+  );
+
+  const tbody = document.getElementById('birthDistBody');
+  tbody.innerHTML = districts.map(d=>{
+    const mort_pct = +(d.mortality/d.girls*100).toFixed(2);
+    const elig_pct = Math.round(d.eligible/d.girls*100);
+    const fill_color = mort_pct>3.5?'#ef4444':mort_pct>2.5?'#f97316':'#1e8a4a';
+    const status = mort_pct<2?'pill-green':mort_pct<3?'pill-gold':'pill-red';
+    return `<tr>
+      <td><strong style="color:var(--white);">${d.name}</strong></td>
+      <td>${d.mothers.toLocaleString('hi-IN')}</td>
+      <td>${d.girls.toLocaleString('hi-IN')}</td>
+      <td><span class="${elig_pct>=80?'pill-green':elig_pct>=70?'pill-gold':'pill-red'} pill">${elig_pct}%</span></td>
+      <td style="color:#f87171;">${d.mortality.toLocaleString('hi-IN')}</td>
+      <td><span class="${status} pill">${mort_pct}%</span></td>
+      <td style="width:120px;">
+        <div class="mort-bar-wrap">
+          <div class="mort-bar-bg" style="flex:1;">
+            <div class="mort-bar-fill" style="width:${Math.min(mort_pct/5*100,100)}%;background:${fill_color};"></div>
+          </div>
+          <span style="font-size:10px;color:var(--muted);width:32px;text-align:right;">${mort_pct}%</span>
+        </div>
+      </td>
+      <td>${mort_pct<2?'<span class="pill pill-green">✓ सुरक्षित</span>':mort_pct<3?'<span class="pill pill-gold">⚠ निगरानी</span>':'<span class="pill pill-red">🚨 जरूरी</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+//  INIT RANKING
+// ══════════════════════════════════════════════
+function initRanking() {
+  // Score = (dbt*0.35) + (elig_pct*0.30) + (hosp_inst*0.20) + ((5-mort_pct)*4*0.15)
+  const scored = districts.map(d=>{
+    const ep = Math.round(d.eligible/d.girls*100);
+    const mp = +(d.mortality/d.girls*100).toFixed(2);
+    const score = Math.round(d.dbt*0.35 + ep*0.30 + d.hosp_inst*0.20 + Math.max(0,(5-mp)*4)*0.15);
+    return {...d, ep, mp, score};
+  }).sort((a,b)=>b.score-a.score);
+
+  const grades = ['A+','A+','A','A','A','B+','B+','B','B','B','C+','C+','C','C','C','C','D','D','D','D','D','D','D','D'];
+
+  const tbody = document.getElementById('rankingBody');
+  tbody.innerHTML = scored.map((d,i)=>{
+    const rClass = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n';
+    const grade = grades[i]||'D';
+    const gc = grade.startsWith('A')?'pill-green':grade.startsWith('B')?'pill-blue':grade.startsWith('C')?'pill-gold':'pill-red';
+    const perfW = d.score;
+    return `<tr>
+      <td><div class="rank-badge ${rClass}">${i+1}</div></td>
+      <td><strong style="color:var(--white);">${d.name}</strong></td>
+      <td><strong style="color:${d.score>=80?'#4ade80':d.score>=65?'#fbbf24':'#f87171'};font-family:Rajdhani;font-size:18px;">${d.score}</strong><span style="color:var(--muted);font-size:10px;">/100</span></td>
+      <td><span class="${d.dbt>=85?'pill-green':d.dbt>=75?'pill-gold':'pill-red'} pill">${d.dbt}%</span></td>
+      <td>${d.ep}%</td>
+      <td>${d.hosp_inst}%</td>
+      <td style="color:${d.mp<2?'#4ade80':d.mp<3?'#fbbf24':'#f87171'}">${d.mp}%</td>
+      <td style="color:#f87171;">${d.pending.toLocaleString('hi-IN')}</td>
+      <td style="width:100px;"><div class="perf-bar"><div class="perf-fill" style="width:${perfW}%;background:${d.score>=80?'#1e8a4a':d.score>=65?'#d4a017':'#c0282f'};"></div></div></td>
+      <td><span class="${gc} pill">${grade}</span></td>
+    </tr>`;
+  }).join('');
+
+  const top10 = scored.slice(0,10);
+  mkChart('top10Chart','bar', top10.map(d=>d.name),
+    [{label:'स्कोर', data:top10.map(d=>d.score),
+      backgroundColor:top10.map((_,i)=>i<3?'#d4a017':i<6?'#1e8a4a':'#1a4a8a'), borderRadius:4}],
+    {indexAxis:'y', scales:{
+      x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'rgba(255,255,255,0.6)'},max:100},
+      y:{grid:{display:false},ticks:{color:'rgba(255,255,255,0.7)',font:{size:10}}}
+    }}
+  );
+
+  const low = scored.slice(-6).reverse();
+  const lw = document.getElementById('lowPerformers');
+  lw.innerHTML = low.map(d=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="font-size:13px;color:#f87171;font-weight:800;width:24px;">${scored.indexOf(d)+1}</div>
+      <div style="flex:1;">
+        <div style="font-weight:700;color:var(--white);font-size:13px;">${d.name}</div>
+        <div style="font-size:11px;color:var(--muted);">DBT:${d.dbt}% | पात्रता:${d.ep}% | मृत्यु:${d.mp}%</div>
+      </div>
+      <div><div class="perf-bar" style="width:80px;"><div class="perf-fill" style="width:${d.score}%;background:#c0282f;"></div></div><div style="font-size:10px;color:var(--muted);text-align:center;margin-top:2px;">${d.score}/100</div></div>
+      <span class="pill pill-red">सुधार चाहिए</span>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════
+//  VIEW ROUTER
+// ══════════════════════════════════════════════
+function initView(id) {
+  if(id==='overview') initOverview();
+  else if(id==='stages')   initStages();
+  else if(id==='district') initDistrict();
+  else if(id==='dbt')      initDBT();
+  else if(id==='pending')  initPending();
+  else if(id==='hospital') initHospital();
+  else if(id==='birth')    initBirth();
+  else if(id==='ranking')  initRanking();
+}
+
+// Init on load
+window.addEventListener('DOMContentLoaded', ()=>{
+  window._rendered = { overview:true };
+  initOverview();
+});
+</script>
+</body>
+</html>
